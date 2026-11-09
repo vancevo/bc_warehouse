@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: singapore
-    buildCommand: npm ci && npm run prisma:generate --workspace @brightchamps/api && npm run build --workspace @brightchamps/api
+    buildCommand: npm ci --include=dev && npm run prisma:generate --workspace @brightchamps/api && npm run build --workspace @brightchamps/api
     startCommand: npm run start:render --workspace @brightchamps/api
     healthCheckPath: /health
     autoDeployTrigger: commit
@@ -31,7 +31,7 @@ services:
   - type: web
     name: brightchamps-warehouse
     runtime: static
-    buildCommand: npm ci && npm run build --workspace @brightchamps/web
+    buildCommand: npm ci --include=dev && npm run build --workspace @brightchamps/web
     staticPublishPath: ./apps/web/dist
     autoDeployTrigger: commit
     envVars:
