@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  VIEWER
+}
+
+enum UserStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum TransactionType {
+  IN
+  OUT
+  KIT_OUT
+  TRANSFER
+  KIT_TRANSFER
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  POSTED
+  VOID
+}
+
+model User {
+  id                 String             @id @default(uuid())
+  email              String             @unique
+  fullName           String
+  passwordHash       String
+  role               Role               @default(STAFF)
+  status             UserStatus         @default(PENDING)
+  mustChangePassword Boolean            @default(false)
+  reviewedAt         DateTime?
+  reviewedById       String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  transactions       StockTransaction[]  @relation("CreatedTransactions")
+  voidedTransactions StockTransaction[]  @relation("VoidedTransactions")
+
+  @@index([status])
+}
+
+model Hub {
+  id                   String             @id @default(uuid())
+  code                 String             @unique
+  name                 String
+  active               Boolean            @default(true)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  stocks               Stock[]
+  sourceTransactions   StockTransaction[]  @relation("SourceHub")
+  destinationTransfers StockTransaction[]  @relation("DestinationHub")
+}
+
+model Material {
+  id           String                 @id @default(uuid())
+  code         String                 @unique
+  name         String
+  category     String
+  unit         String
+  minimumStock Decimal                @default(0) @db.Decimal(14, 3)
+  note         String?
+  active       Boolean                @default(true)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  stocks       Stock[]
+  items        StockTransactionItem[]
+  kitItems     KitItem[]
+
+  @@index([name])
+  @@index([category])
+}
+
+model Kit {
+  id           String             @id @default(uuid())
+  code         String             @unique
+  name         String
+  active       Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  items        KitItem[]
+  transactions StockTransaction[]
+}
+
+model KitItem {
+  id         String   @id @default(uuid())
+  kitId      String
+  materialId String
+  quantity   Decimal  @db.Decimal(14, 3)
+  kit        Kit      @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Restrict)
+
+  @@unique([kitId, materialId])
+  @@index([materialId])
+}
+
+model Stock {
+  id         String   @id @default(uuid())
+  hubId      String
+  materialId String
+  quantity   Decimal  @default(0) @db.Decimal(14, 3)
+  updatedAt  DateTime @updatedAt
+  hub        Hub      @relation(fields: [hubId], references: [id], onDelete: Restrict)
+  material   Material @relation(fields: [materialId], references: [id], onDelete: Restrict)
+
+  @@unique([hubId, materialId])
+  @@index([materialId])
+}
+
+model StockTransaction {
+  id                    String               @id @default(uuid())
+  transactionNo         String               @unique
+  type                  TransactionType
+  status                TransactionStatus    @default(POSTED)
+  hubId                 String
+  destinationHubId      String?
+  kitId                 String?
+  kitQuantity           Int?
+  transactionDate       DateTime             @default(now())
+  counterparty          String?
+  note                  String?
+  createdById           String
+  voidedById            String?
+  voidedAt              DateTime?
+  voidReason            String?
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  hub                   Hub                  @relation("SourceHub", fields: [hubId], references: [id], onDelete: Restrict)
+  destinationHub        Hub?                 @relation("DestinationHub", fields: [destinationHubId], references: [id], onDelete: Restrict)
+  kit                   Kit?                 @relation(fields: [kitId], references: [id], onDelete: Restrict)
+  createdBy             User                 @relation("CreatedTransactions", fields: [createdById], references: [id], onDelete: Restrict)
+  voidedBy              User?                @relation("VoidedTransactions", fields: [voidedById], references: [id], onDelete: Restrict)
+  items                 StockTransactionItem[]
+
+  @@index([hubId, transactionDate])
+  @@index([type, status])
+  @@index([kitId])
+}
+
+model StockTransactionItem {
+  id            String           @id @default(uuid())
+  transactionId String
+  materialId    String
+  quantity      Decimal          @db.Decimal(14, 3)
+  note          String?
+  transaction   StockTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  material      Material         @relation(fields: [materialId], references: [id], onDelete: Restrict)
+
+  @@index([transactionId])
+  @@index([materialId])
+}

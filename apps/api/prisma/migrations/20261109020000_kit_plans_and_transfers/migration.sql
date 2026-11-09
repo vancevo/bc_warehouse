@@ -1,0 +1,17 @@
+ALTER TYPE "TransactionType" ADD VALUE 'KIT_TRANSFER';
+
+CREATE TABLE "KitPlan" (
+  "id" TEXT NOT NULL,
+  "hubId" TEXT NOT NULL,
+  "kitId" TEXT NOT NULL,
+  "plannedQuantity" INTEGER NOT NULL DEFAULT 0,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "KitPlan_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX "KitPlan_hubId_kitId_key" ON "KitPlan"("hubId", "kitId");
+CREATE INDEX "KitPlan_kitId_idx" ON "KitPlan"("kitId");
+
+ALTER TABLE "KitPlan" ADD CONSTRAINT "KitPlan_hubId_fkey" FOREIGN KEY ("hubId") REFERENCES "Hub"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "KitPlan" ADD CONSTRAINT "KitPlan_kitId_fkey" FOREIGN KEY ("kitId") REFERENCES "Kit"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -1,0 +1,22 @@
+{
+  "name": "brightchamps-warehouse",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:api": "npm run start:dev --workspace @brightchamps/api",
+    "dev:web": "npm run dev --workspace @brightchamps/web",
+    "build": "npm run build --workspace @brightchamps/api && npm run build --workspace @brightchamps/web",
+    "test": "npm run test --workspace @brightchamps/api",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "overrides": {
+    "multer": "2.5.0"
+  }
+}
